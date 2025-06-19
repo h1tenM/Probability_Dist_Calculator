@@ -5,6 +5,7 @@ import plotly
 import plotly.graph_objects as go
 import json
 from utils import plot_distribution, calculate_binomial_probabilities
+import os
 
 app = Flask(__name__)
 
@@ -180,4 +181,4 @@ def calculate_binomial():
     return jsonify(results)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
