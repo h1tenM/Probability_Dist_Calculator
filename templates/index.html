@@ -1,0 +1,49 @@
+{% extends "base.html" %} {% block content %}
+<div class="container">
+	<div class="row justify-content-center">
+		<div class="col-md-8 text-center">
+			<h1 class="display-4 mb-4">Probability Distribution Visualizer</h1>
+			<p class="lead">
+				Welcome to the Probability Distribution Visualizer! This tool helps you
+				understand and calculate various probability distributions.
+			</p>
+			<div class="row mt-5">
+				<div class="col-md-6">
+					<div class="card distribution-card">
+						<div class="card-body">
+							<h5 class="card-title">Continuous Distributions</h5>
+							<p class="card-text">
+								Explore continuous probability distributions like Normal, Exponential,
+								and more.
+							</p>
+							<a
+								href="#continuousCollapse"
+								class="btn btn-primary"
+								data-bs-toggle="collapse"
+								>View Continuous</a
+							>
+						</div>
+					</div>
+				</div>
+				<div class="col-md-6">
+					<div class="card distribution-card">
+						<div class="card-body">
+							<h5 class="card-title">Discrete Distributions</h5>
+							<p class="card-text">
+								Explore discrete probability distributions like Poisson, Binomial, and
+								more.
+							</p>
+							<a
+								href="#discreteCollapse"
+								class="btn btn-primary"
+								data-bs-toggle="collapse"
+								>View Discrete</a
+							>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+{% endblock %}

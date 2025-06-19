@@ -1,0 +1,210 @@
+{% extends "base.html" %} {% block content %}
+<div class="container-fluid">
+	<!-- Breadcrumb -->
+	<nav aria-label="breadcrumb">
+		<ol class="breadcrumb">
+			<li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+			<li class="breadcrumb-item">{{ dist_type|title }}</li>
+			<li class="breadcrumb-item active">{{ dist_info.name }}</li>
+		</ol>
+	</nav>
+
+	<div class="row">
+		<!-- Distribution Information -->
+		<div class="col-md-4">
+			<div class="card">
+				<div class="card-header">
+					<h5 class="card-title mb-0">{{ dist_info.name }}</h5>
+				</div>
+				<div class="card-body">
+					<p class="card-text">{{ dist_info.story }}</p>
+					<h6>Moment Generating Function:</h6>
+					<p class="card-text">{{ dist_info.mgf }}</p>
+					<h6>Parameters:</h6>
+					<ul class="list-unstyled">
+						{% for param in dist_info.parameters %}
+						<li><code>{{ param }}</code></li>
+						{% endfor %}
+					</ul>
+				</div>
+			</div>
+		</div>
+
+		<!-- Calculator -->
+		<div class="col-md-8">
+			<div class="card">
+				<div class="card-header">
+					<h5 class="card-title mb-0">Probability Calculator</h5>
+				</div>
+				<div class="card-body">
+					<form id="calcForm" class="mb-4">
+						<input type="hidden" name="dist_type" value="{{ dist_type }}" />
+						<input type="hidden" name="dist_name" value="{{ dist_name }}" />
+
+						<!-- Parameters -->
+						<div class="row mb-3">
+							{% for param in dist_info.parameters %}
+							<div class="col-md-6">
+								<div class="form-group">
+									<label for="{{ param }}">{{ param|title }}</label>
+									<input
+										type="number"
+										class="form-control"
+										id="{{ param }}"
+										name="{{ param }}"
+										step="any"
+										required
+									/>
+								</div>
+							</div>
+							{% endfor %}
+						</div>
+
+						<!-- X value -->
+						<div class="row mb-3">
+							<div class="col-md-6">
+								<div class="form-group">
+									<label for="x">X value</label>
+									<input
+										type="number"
+										class="form-control"
+										id="x"
+										name="x"
+										step="any"
+										required
+									/>
+								</div>
+							</div>
+							<div class="col-md-6">
+								<div class="form-group">
+									<label for="calc_type">Calculation Type</label>
+									<select class="form-control" id="calc_type" name="calc_type">
+										<option value="pdf">Probability Density Function (PDF)</option>
+										<option value="cdf">Cumulative Distribution Function (CDF)</option>
+									</select>
+								</div>
+							</div>
+						</div>
+						<div class="row mb-3">
+							<div class="col-md-12">
+								<div class="form-group">
+									<label>Probability Type</label>
+									<div class="btn-group btn-group-toggle w-100" data-toggle="buttons">
+										<label class="btn btn-outline-primary active">
+											<input type="radio" name="prob_type" value="less" checked /> P(X < x)
+										</label>
+										<label class="btn btn-outline-primary">
+											<input type="radio" name="prob_type" value="less_equal" /> P(X ≤ x)
+										</label>
+										<label class="btn btn-outline-primary">
+											<input type="radio" name="prob_type" value="greater" /> P(X > x)
+										</label>
+										<label class="btn btn-outline-primary">
+											<input type="radio" name="prob_type" value="greater_equal" /> P(X ≥
+											x)
+										</label>
+									</div>
+								</div>
+							</div>
+						</div>
+						<button type="submit" class="btn btn-primary">Calculate</button>
+					</form>
+
+					<!-- Results -->
+					<div id="results" class="d-none">
+						<h6>Results:</h6>
+						<div class="table-responsive">
+							<table class="table table-bordered">
+								<tbody>
+									<tr>
+										<td id="prob_result_label">Probability</td>
+										<td id="prob_result">-</td>
+									</tr>
+									<tr>
+										<td>Mean (μ)</td>
+										<td id="mean">-</td>
+									</tr>
+									<tr>
+										<td>Standard Deviation (σ)</td>
+										<td id="std">-</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+					</div>
+
+					<!-- Graph -->
+					<div id="graph-container"></div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+{% endblock %} {% block scripts %}
+<script>
+	document
+		.getElementById("calcForm")
+		.addEventListener("submit", async function (e) {
+			e.preventDefault();
+
+			const formData = new FormData(this);
+			const data = {
+				dist_type: formData.get("dist_type"),
+				dist_name: formData.get("dist_name"),
+				calc_type: formData.get("calc_type"),
+				x: formData.get("x"),
+				prob_type: document.querySelector('input[name="prob_type"]:checked').value,
+			};
+
+			// Add parameters
+			document
+				.querySelectorAll('#calcForm input[type="number"]')
+				.forEach((input) => {
+					if (!["x", "calc_type"].includes(input.name)) {
+						data[input.name] = input.value;
+					}
+				});
+
+			try {
+				const response = await fetch("/calculate", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify(data),
+				});
+
+				const result = await response.json();
+
+				if (response.ok) {
+					// Update results display
+					document.getElementById("results").classList.remove("d-none");
+
+					// Show the specific probability result
+					const probTypeMap = {
+						less: "P(X < x)",
+						less_equal: "P(X ≤ x)",
+						greater: "P(X > x)",
+						greater_equal: "P(X ≥ x)",
+					};
+
+					document.getElementById("prob_result").textContent = `${
+						probTypeMap[result.prob_type]
+					} = ${result.prob_result.toFixed(4)}`;
+
+					// Update other stats
+					document.getElementById("mean").textContent = result.mean.toFixed(4);
+					document.getElementById("std").textContent = result.std.toFixed(4);
+
+					// Update graph
+					updatePlotlyGraph(result.graph_data);
+				} else {
+					alert("Error: " + (result.error || "Unknown error occurred"));
+				}
+			} catch (error) {
+				console.error("Error:", error);
+				alert(
+					"An error occurred while calculating probabilities. Please check your inputs."
+				);
+			}
+		});
+</script>
+{% endblock %}
