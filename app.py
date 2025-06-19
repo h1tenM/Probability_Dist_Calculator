@@ -72,8 +72,9 @@ def calculate():
     data = request.get_json()
     dist_type = data.get('dist_type')
     dist_name = data.get('dist_name')
-    calc_type = data.get('calc_type')
-    x = float(data.get('x', 0))
+    calc_type = data.get('calc_type', 'pdf')
+    x_value = float(data.get('x', 0))
+    prob_type = data.get('prob_type', 'less')
     
     # Initialize parameters and statistics
     params_dict = {}
@@ -127,21 +128,7 @@ def calculate():
         return jsonify({'error': 'Unknown distribution'}), 400
     
     # For discrete distributions, x must be an integer for calculations
-    x_calc = int(round(x)) if dist_type == 'discrete' else x
-    
-    # Generate points for the plot
-    if dist_type == 'continuous':
-        x_vals = np.linspace(x_range_plot[0], x_range_plot[1], 500)
-    else:
-        x_vals = np.arange(x_range_plot[0], x_range_plot[1] + 1)
-    
-    if calc_type == 'pdf':
-        y_vals = dist.pdf(x_vals) if dist_type == 'continuous' else dist.pmf(x_vals)
-    else:
-        y_vals = dist.cdf(x_vals)
-    
-    # Create points array for D3.js
-    points = [{'x': float(x), 'y': float(y)} for x, y in zip(x_vals, y_vals)]
+    x_calc = int(round(x_value)) if dist_type == 'discrete' else x_value
     
     # Calculate probabilities
     if dist_type == 'discrete':
@@ -157,7 +144,27 @@ def calculate():
         prob_greater = 1 - prob_less_equal
         prob_greater_equal = 1 - prob_less
     
+    # Get probability result based on prob_type
+    prob_result = {
+        'less': prob_less,
+        'less_equal': prob_less_equal,
+        'greater': prob_greater,
+        'greater_equal': prob_greater_equal
+    }.get(prob_type, prob_less_equal)
+    
+    # Generate graph data
+    graph_data = plot_distribution(
+        dist_name=dist_name,
+        params=params_dict,
+        x_range=x_range_plot,
+        calc_type=calc_type,
+        x_value=x_value,
+        prob_type=prob_type
+    )
+    
     return jsonify({
+        'prob_result': prob_result,
+        'prob_type': prob_type,
         'prob_exact': prob_exact,
         'prob_less': prob_less,
         'prob_less_equal': prob_less_equal,
@@ -165,9 +172,7 @@ def calculate():
         'prob_greater_equal': prob_greater_equal,
         'mean': mean_val,
         'std': std_val,
-        'x_range': [float(x_range_plot[0]), float(x_range_plot[1])],
-        'y_values': [float(y) for y in y_vals],
-        'points': points
+        'graph_data': graph_data
     })
 
 @app.route('/calculate_binomial', methods=['POST'])

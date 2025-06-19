@@ -152,7 +152,7 @@
 				dist_type: formData.get("dist_type"),
 				dist_name: formData.get("dist_name"),
 				calc_type: formData.get("calc_type"),
-				x: formData.get("x"),
+				x: parseFloat(formData.get("x")),
 				prob_type: document.querySelector('input[name="prob_type"]:checked').value,
 			};
 
@@ -160,8 +160,8 @@
 			document
 				.querySelectorAll('#calcForm input[type="number"]')
 				.forEach((input) => {
-					if (!["x", "calc_type"].includes(input.name)) {
-						data[input.name] = input.value;
+					if (!["x"].includes(input.name)) {
+						data[input.name] = parseFloat(input.value);
 					}
 				});
 
@@ -186,9 +186,10 @@
 						greater_equal: "P(X ≥ x)",
 					};
 
-					document.getElementById("prob_result").textContent = `${
-						probTypeMap[result.prob_type]
-					} = ${result.prob_result.toFixed(4)}`;
+					document.getElementById("prob_result_label").textContent =
+						probTypeMap[result.prob_type];
+					document.getElementById("prob_result").textContent =
+						result.prob_result.toFixed(6);
 
 					// Update other stats
 					document.getElementById("mean").textContent = result.mean.toFixed(4);
